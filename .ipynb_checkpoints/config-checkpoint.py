@@ -24,7 +24,6 @@ class Code(Enum):
     EUT = "Eutectic"
     SOL = "Solution"
     LIQ = 'Composition'
-    BAT = 'Batch'
 
 class InputError(Exception):
     """Custom exception class for handling input validation errors"""
@@ -163,42 +162,6 @@ class NRTLParams:
         if len(self.delta_H_fus) != 2:
             raise InputError("Two heat of fusions expected.", code=Code.IN)
 
-@dataclass
-class BatchOutput:
-    Tf: float
-    Pf: float
-    Q: float
-    xL: List[float]
-    xS: List[float]
-    solid_frac: float
-    liquid_frac: float
-    y: List[float]
-
-    def __post_init__(self):
-        if self.Tf < 0:
-            raise SolvingError("Temperature must be greater than zero.", code=Code.BAT)
-        if self.Pf < 0:
-            raise SolvingError("Pressure must be greater than zero.", code=Code.BAT)
-        if len(self.xL) != 2:
-            raise SolvingError("Liquid should be a binary mixture.", code=Code.BAT)
-        if abs(sum(self.xL) -1) > error:
-            raise SolvingError('Liquid composition must add up to 1.', code=Code.BAT)
-        if any([x > 1 or x < 0 for x in self.xL]):
-            raise SolvingError("Liquid compositions must be within [0,1].", code=Code.BAT)
-        if abs(sum(self.xS) -1) > error:
-            raise SolvingError('Solid composition must add up to 1.', code=Code.BAT)
-        if any([x > 1 or x < 0 for x in self.xS]):
-            raise SolvingError("Solid compositions must be within [0,1].", code=Code.BAT)
-        if abs(sum([self.liquid_frac, self.solid_frac]) - 1) > error:
-            raise SolvingError("Phase fractions must add up to 1.", code=Code.BAT)
-        if any([frac > 1 or frac < 0 for frac in [self.liquid_frac, self.solid_frac]]):
-            raise SolvingError("Phase fractions must be within [0,1].", code=Code.BAT)
-        if any([y > 1 or y < 0 for y in self.y]):
-            raise SolvingError("Vapor compositions must be within [0,1].", code=Code.BAT)
-        if abs(sum(self.y) -1) > error:
-            raise SolvingError('Vapor composition must add up to 1.', code=Code.BAT)
-        
-
 class Species:
     def __init__(self, **kwargs):
         assert all([key in kwargs for key in MAT_PROPS])
@@ -209,8 +172,6 @@ class Species:
 """Problem 3"""
 
 R_BAR= 8.314 * (10 ** -5)
-V = 5 #m**3
-kij =  0.1 #Approx. binary interaction parameter of Benzaldehype-Benzene
 
 class Chemical:
     def __init__(self, **kwargs):
