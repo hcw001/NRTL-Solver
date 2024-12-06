@@ -2,6 +2,7 @@ from config import Chemical, R_BAR as R, V, kij, Response, State, BatchOutput, N
 from tests import checkPREOS, checkMix
 from math import sqrt, log as ln, exp, log10
 from scipy.optimize import fsolve
+from nrtl import activity_coeffs
 
 Benzaldehyde = Chemical(
     name='benzaldehyde',
@@ -121,7 +122,7 @@ class Mix:
         return f
     def get_delta_H_mix(self):
         """Definition of the enthalpy change on mixing"""
-        return self.get_H() - self.inputs.x[0] * self.eos[0].get_H() - self.inputs.x[1] * self.eos[1].get_H()
+        return (self.get_H() - self.inputs.x[0] * self.eos[0].get_H() - self.inputs.x[1] * self.eos[1].get_H())
     def get_n(self, V):
         Vmix = self.get_Z() * R * self.state.T / self.state.P
         return 5 / Vmix
@@ -145,11 +146,12 @@ def solve(inputs: NRTLParams, nrtl_state: Response):
     )
     assert checkMix(mix)
     #Solve for Heat Requirement
-    n = mix.get_n(V)
-    Hfus = sum([nrtl_state.xS[i] * inputs.delta_H_fus[i] * n * nrtl_state.solid_frac for i in range(2)])
-    Q = mix.get_delta_H_mix() * n - Hfus
+    n = mix.get_n(V)[0]
+    Hfus = sum([nrtl_state.xS[i] * inputs.delta_H_fus[i] * n * nrtl_state.solid_frac / 1000 for i in range(2)])
+    Q = mix.get_delta_H_mix()[0] * n + Hfus
     #Solve for Pressure
-    Pf = nrtl_state.xL[0] * preos1.get_Psat(T) + nrtl_state.xL[1] * preos2.get_Psat(T)
+    gamma1, gamma2 = activity_coeffs(nrtl_state.xL, T, inputs.delta_g12, inputs.delta_g21, inputs.alpha)
+    Pf = nrtl_state.xL[0] * preos1.get_Psat(T) * gamma1 + nrtl_state.xL[1] * preos2.get_Psat(T) * gamma2
     y1 = nrtl_state.xL[0] * preos1.get_Psat(T) / Pf
     return BatchOutput(
         Tf= T,

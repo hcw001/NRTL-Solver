@@ -12,6 +12,4 @@ def checkMix(mix):
     a_mix = mix.eos[0].get_a() * (mix.inputs.x[0]**2) + 2 * mix.inputs.x[0] * mix.inputs.x[1] * \
         sqrt(mix.eos[0].get_a() * mix.eos[1].get_a()) * (1-mix.k) + \
         (mix.inputs.x[1] ** 2) * mix.eos[1].get_a()
-    print(a_mix)
-    print(mix.get_a_mix())
     return abs(a_mix - mix.get_a_mix()) < ERR
